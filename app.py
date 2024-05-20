@@ -1,17 +1,35 @@
 import asyncio
-from datetime import datetime
+import json
+
+from aiogram import Bot, Dispatcher, types, Router
 
 from src.config.settings import app_settings
+from src.aggregator.aggregator import Aggregator
 from src.storage.default import DefaultStorage
 from src.config.mongo import sample_collection
-from src.aggregator.aggregator import Aggregator
 
-async def start():
-    ds = DefaultStorage(sample_collection)
-    aggr = Aggregator(ds)
-    res = await aggr.get_data("2022-10-01T00:00:00", "2022-11-30T23:59:00", "day")
-    # res = await ds.get_many(datetime.fromisoformat("2022-01-01T03:28:00.000+00:00"), datetime.fromisoformat("2021-12-31T23:50:00.000+00:00"))
-    print(res)
-    print()
+aggregator = Aggregator(DefaultStorage(sample_collection))
+router = Router()
 
-asyncio.run(start())
+
+@router.message()
+async def handler(message: types.Message):
+    data = json.loads(message.text)
+    res = await aggregator.get_data(
+        dt_from=data["dt_from"], dt_upto=data["dt_upto"], group_type=data["group_type"]
+    )
+    await message.answer(json.dumps(res))
+
+
+async def startup():
+    bot = Bot(token=app_settings.bot.token)
+    dp = Dispatcher()
+
+    dp.include_router(router)
+    
+    await dp.start_polling(bot)
+        
+
+
+if __name__ == "__main__":
+    asyncio.run(startup())

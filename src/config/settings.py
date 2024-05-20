@@ -5,12 +5,14 @@ import os
 from dotenv import load_dotenv
 
 from .db import MongoConfig
+from .bot import BotConfig
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
 
 class AppSettings(NamedTuple):
     mongo: MongoConfig
+    bot: BotConfig
 
 
 def load_cofig(env_path: Optional[str] = None) -> AppSettings:
@@ -22,6 +24,9 @@ def load_cofig(env_path: Optional[str] = None) -> AppSettings:
         mongo=MongoConfig(
             host=os.getenv("MONGO_HOST"),
             port=os.getenv("MONGO_PORT")
+        ),
+        bot=BotConfig(
+            token=os.getenv("BOT_TOKEN")
         )
     )
     
