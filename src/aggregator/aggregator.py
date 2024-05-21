@@ -19,7 +19,7 @@ class Aggregator:
         self, dt_from: datetime, dt_to: datetime, docs: list[dict], group_type: str
     ):
         dt_start = dt_from
-        res = {"dataset": [], "lables": []}
+        res = {"dataset": [], "labels": []}
         while True:
 
             if group_type == "hour":
@@ -27,24 +27,24 @@ class Aggregator:
             elif group_type == "day":
                 coeff = 24
             elif group_type == "month":
-                _days = monthrange(dt_from.year, dt_from.month)[1]
-                coeff = 24 * _days
+                coeff = 24 * monthrange(dt_start.year, dt_start.month)[1]
             _dt_end = dt_start + timedelta(hours=1 * coeff)
-
-            if _dt_end > dt_to:
-                break
 
             answer = await self._get_docs_by_period(dt_start, _dt_end, docs)
 
             res["dataset"].append(sum([item["value"] for item in answer]))
-            res["lables"].append(
+            res["labels"].append(
                 datetime(
                     dt_start.year,
                     dt_start.month,
                     day=dt_start.day,
-                    tzinfo=dt_from.tzinfo,
+                    hour=dt_start.hour,
+                    tzinfo=dt_start.tzinfo,
                 ).isoformat()
             )
+
+            if _dt_end > dt_to:
+                break
 
             dt_start = _dt_end
 
@@ -64,6 +64,6 @@ class Aggregator:
                 second=dt.second,
                 tzinfo=dt_from.tzinfo,
             )
-            return dt >= dt_from and dt <= dt_upto
+            return dt >= dt_from and dt < dt_upto
 
         return list(filter(_filter, docs))
